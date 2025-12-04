@@ -10,7 +10,7 @@ async function bootstrap() {
   });
 
   const PORT = process.env.PORT || 3001;
-  const HOST = 'localhost';
+  const HOST = '0.0.0.0';
   await app.listen(PORT, HOST);
 }
 bootstrap();

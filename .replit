@@ -1,0 +1,47 @@
+modules = ["python-3.12", "web", "nodejs-20"]
+[agent]
+expertMode = true
+
+[nix]
+channel = "stable-25_05"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Bidly Application"
+
+[[workflows.workflow]]
+name = "Bidly Application"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[ports]]
+localPort = 3001
+externalPort = 3001
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[[ports]]
+localPort = 45869
+externalPort = 3000
+
+[deployment]
+deploymentTarget = "autoscale"
+run = ["bash", "-c", "cd bidly-backend && npx prisma@5.11.0 migrate deploy && cd .. && concurrently \"cd bidly-backend && npm run start:prod\" \"npx serve -s bidly-frontend/build -l 5000\""]
+build = ["bash", "-c", "npm run install:all && cd bidly-backend && npx prisma@5.11.0 generate && cd ../bidly-frontend && npm run build"]

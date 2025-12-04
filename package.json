@@ -18,7 +18,8 @@
     "prisma:generate": "cd bidly-backend && npm run prisma:generate"
   },
   "dependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "serve": "^14.2.5"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -60,8 +60,5 @@ privatekey
 publickey
 private
 
-# Replit
-.replit
-.config/
+# Replit - Keep replit files for deployment
 .upm/
-replit.nix
