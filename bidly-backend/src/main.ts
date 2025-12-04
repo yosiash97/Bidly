@@ -4,19 +4,13 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
-    origin: [
-      'https://bidly-front-end.vercel.app', 
-      'https://bidly-front-end-dev.vercel.app',
-      'http://localhost:3000' // Allow localhost:3000 for local development
-    ],
+    origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+    credentials: true,
   });
 
-  const PORT = process.env.NODE_ENV === 'production'
-  ? 3000
-  : 3001;
-  const HOST = '0.0.0.0';
+  const PORT = process.env.PORT || 3001;
+  const HOST = 'localhost';
   await app.listen(PORT, HOST);
 }
 bootstrap();
