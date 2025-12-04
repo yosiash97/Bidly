@@ -118,7 +118,7 @@ All migrations are located in `bidly-backend/prisma/migrations/` and have been s
 
 ### Backend Configuration
 - CORS is enabled for all origins to work with Replit's proxy
-- The backend listens on localhost (not 0.0.0.0) as it's an internal API
+- The backend listens on 0.0.0.0:3001 to be accessible from the Replit proxy
 - Prisma client is generated using version 5.11.0 to match the schema format
 
 ### Known Issues
