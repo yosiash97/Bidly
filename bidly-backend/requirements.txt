@@ -1,0 +1,6 @@
+selenium
+requests
+geopy
+beautifulsoup4
+scrapeghost
+webdriver-manager

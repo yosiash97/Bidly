@@ -1,5 +1,6 @@
 import sys
 import json
+import os
 from selenium import webdriver
 import requests
 from selenium.webdriver.chrome.service import Service
@@ -14,6 +15,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from datetime import datetime
 from datetime import date
+
+# Environment variables (OPENAI_API_KEY) should be passed from Node.js
+# No need to load from .env file
 
 # Schema definition
 schema = {
@@ -124,29 +128,75 @@ def parse_planet_bids(soup):
 
     return data
 
+def parse_standard_table(soup):
+    """Parse standard HTML tables with thead, tbody, tr, td structure"""
+    tables = soup.find_all('table')
+    all_table_data = []
+
+    for table in tables:
+        # Get headers
+        headers = []
+        thead = table.find('thead')
+        if thead:
+            header_row = thead.find('tr')
+            if header_row:
+                headers = [th.get_text(strip=True) for th in header_row.find_all(['th', 'td'])]
+
+        # Get rows
+        tbody = table.find('tbody') or table
+        rows = tbody.find_all('tr')
+
+        table_data = []
+        for row in rows:
+            cells = row.find_all(['td', 'th'])
+            if cells:
+                row_data = {}
+                for i, cell in enumerate(cells):
+                    # Get cell text
+                    cell_text = cell.get_text(strip=True)
+                    # Get links if any
+                    link = cell.find('a')
+                    if link and link.get('href'):
+                        cell_text = {'text': cell_text, 'url': link.get('href')}
+
+                    header = headers[i] if i < len(headers) and headers else f"Column_{i}"
+                    row_data[header] = cell_text
+
+                if row_data:
+                    table_data.append(row_data)
+
+        if table_data:
+            all_table_data.extend(table_data)
+
+    return all_table_data
+
 def preprocess_html(html):
     soup = BeautifulSoup(html, "lxml")
-    tables = soup.find_all('table')
-    
+
     # Collect data from traditional tables
     new_soup = BeautifulSoup("", "lxml")
-    for table in tables:
-        new_soup.append(table)
+
+    # Parse standard HTML tables
+    standard_table_data = parse_standard_table(soup)
 
     # Collect data from React tables
     react_table_data = parse_react_table(soup)
     list_group_data = parse_list_group(soup)
     planet_bids_data = parse_planet_bids(soup)
+
     if react_table_data:
         react_table_str = json.dumps(react_table_data, indent=4)
         new_soup.append(BeautifulSoup(f"<pre>{react_table_str}</pre>", "lxml"))
-    elif not react_table_data and list_group_data:
+    elif list_group_data:
         list_group_str = json.dumps(list_group_data, indent=4)
         new_soup.append(BeautifulSoup(f"<pre>{list_group_str}</pre>", "lxml"))
-    elif not react_table_data and not list_group_data and planet_bids_data:
+    elif planet_bids_data:
         planet_bids_str = json.dumps(planet_bids_data, indent=4)
         new_soup.append(BeautifulSoup(f"<pre>{planet_bids_str}</pre>", "lxml"))
-
+    elif standard_table_data:
+        # Use standard table data if no other format was found
+        standard_table_str = json.dumps(standard_table_data, indent=4)
+        new_soup.append(BeautifulSoup(f"<pre>{standard_table_str}</pre>", "lxml"))
 
     return str(new_soup)
 

@@ -17,7 +17,7 @@ export class TaskService {
     ) {}
   private readonly jsonFilePath = process.env.NODE_ENV === 'production'
   ? "cities.json"
-  : "/Users/yosiashailu/Desktop/bidly-backend/cities.json";
+  : "/Users/yosiashailu/Desktop/bidly/bidly-backend/cities.json";
   private readonly outputData: any[] = [];
 
   @Cron('0 0 * * 0')
@@ -42,7 +42,7 @@ export class TaskService {
 
   private async scrapeLatestBidsWithDelay(url: string, city: string): Promise<void> {
     await this.scrapeLatestBids(url, city);
-    await this.delay(30000); // 30 seconds delay
+    await this.delay(10000); // 30 seconds delay
   }
 
   private delay(ms: number): Promise<void> {
@@ -90,7 +90,7 @@ export class TaskService {
   private async scrapeLatestBids(url: string, city: string): Promise<void> {
     try {
       const escapedCity = city.replace(/ /g, '\\ '); 
-      const pythonPath = process.env.NODE_ENV === 'production' ? '/app/venv/bin/python3' : '/Users/yosiashailu/Desktop/bidly-backend/myenv/bin/python3';
+      const pythonPath = process.env.NODE_ENV === 'production' ? '/app/venv/bin/python3' : '/Users/yosiashailu/Desktop/bidly/bidly-backend/env/bin/python3';
 
       console.log(`${pythonPath} scraper.py "${url}" "${escapedCity}"`);
       // Execute the Python script using promisified version of exec
@@ -133,7 +133,17 @@ export class TaskService {
   // Promisify the exec function
   private promisifyExec(command: string): Promise<{ stdout: string, stderr: string }> {
     return new Promise((resolve, reject) => {
-      exec(command, (error, stdout, stderr) => {
+      const backendDir = process.env.NODE_ENV === 'production'
+        ? '/app'
+        : '/Users/yosiashailu/Desktop/bidly/bidly-backend';
+
+      exec(command, {
+        env: {
+          ...process.env,
+          OPENAI_API_KEY: process.env.OPENAI_API_KEY
+        },
+        cwd: backendDir
+      }, (error, stdout, stderr) => {
         if (error) {
           reject(error);
         } else {

@@ -52,41 +52,110 @@ export class BidsService {
   }
 
   async findBidsWithinDistance(homeLat: number, homeLong: number, sliderValue: number) {
-    const radiusInMeters = sliderValue * 1609.34; // Convert miles to meters
-  
-    const locations = await this.prisma.$queryRaw`
-      SELECT *, ST_DistanceSphere(
-        ST_SetSRID(ST_MakePoint(${homeLong}, ${homeLat}), 4326),
-        ST_SetSRID(ST_Point(ST_Y(location::geometry), ST_X(location::geometry)), 4326)
-      ) AS distance_in_meters
-      FROM public.bid
-      WHERE ST_DistanceSphere(
-        ST_SetSRID(ST_MakePoint(${homeLong}, ${homeLat}), 4326),
-        ST_SetSRID(ST_Point(ST_Y(location::geometry), ST_X(location::geometry)), 4326)
-      ) <= ${radiusInMeters};
-    `;
-    
-    return locations;
+    const radiusInMiles = sliderValue;
+
+    // Get all bids and filter by distance using Haversine formula
+    const allBids = await this.prisma.bid.findMany({
+      where: {
+        deletedAt: null,
+        location: {
+          not: null
+        }
+      }
+    });
+
+    // Helper function to calculate distance using Haversine formula
+    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+      const R = 3959; // Earth's radius in miles
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    };
+
+    // Filter bids within the specified radius
+    const filteredBids = allBids.filter(bid => {
+      if (!bid.location) return false;
+
+      // Parse location string (format: "POINT(lat long)")
+      const match = bid.location.match(/POINT\s*\(?\s*([-\d.]+)\s+([-\d.]+)\s*\)?/i);
+      if (!match) return false;
+
+      const bidLat = parseFloat(match[1]);
+      const bidLong = parseFloat(match[2]);
+
+      const distance = calculateDistance(homeLat, homeLong, bidLat, bidLong);
+      return distance <= radiusInMiles;
+    }).map(bid => ({
+      ...bid,
+      distance_in_miles: bid.location ? (() => {
+        const match = bid.location.match(/POINT\s*\(?\s*([-\d.]+)\s+([-\d.]+)\s*\)?/i);
+        if (!match) return null;
+        const bidLat = parseFloat(match[1]);
+        const bidLong = parseFloat(match[2]);
+        return calculateDistance(homeLat, homeLong, bidLat, bidLong);
+      })() : null
+    }));
+
+    return filteredBids;
   }
 
   async findBidsbyTypeAndDistance(sliderValue: number, bid_type: string) {
-    const radiusInMeters = sliderValue * 1609.34; // Convert miles to meters
+    const radiusInMiles = sliderValue;
     let homeLat = 37.3387
     let homeLong = -121.8853
-    const locations = await this.prisma.$queryRaw`
-      SELECT *, ST_DistanceSphere(
-        ST_SetSRID(ST_MakePoint(${homeLong}, ${homeLat}), 4326),
-        ST_SetSRID(ST_Point(ST_Y(location::geometry), ST_X(location::geometry)), 4326)
-      ) AS distance_in_meters
-      FROM public.bid
-      WHERE ST_DistanceSphere(
-        ST_SetSRID(ST_MakePoint(${homeLong}, ${homeLat}), 4326),
-        ST_SetSRID(ST_Point(ST_Y(location::geometry), ST_X(location::geometry)), 4326)
-      ) <= ${radiusInMeters}
-      AND bid_type = ${bid_type};
-    `;
-    return locations;
 
+    // Get all bids of the specified type and filter by distance using Haversine formula
+    const allBids = await this.prisma.bid.findMany({
+      where: {
+        deletedAt: null,
+        bid_type: bid_type,
+        location: {
+          not: null
+        }
+      }
+    });
+
+    // Helper function to calculate distance using Haversine formula
+    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+      const R = 3959; // Earth's radius in miles
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    };
+
+    // Filter bids within the specified radius
+    const filteredBids = allBids.filter(bid => {
+      if (!bid.location) return false;
+
+      // Parse location string (format: "POINT(lat long)")
+      const match = bid.location.match(/POINT\s*\(?\s*([-\d.]+)\s+([-\d.]+)\s*\)?/i);
+      if (!match) return false;
+
+      const bidLat = parseFloat(match[1]);
+      const bidLong = parseFloat(match[2]);
+
+      const distance = calculateDistance(homeLat, homeLong, bidLat, bidLong);
+      return distance <= radiusInMiles;
+    }).map(bid => ({
+      ...bid,
+      distance_in_miles: bid.location ? (() => {
+        const match = bid.location.match(/POINT\s*\(?\s*([-\d.]+)\s+([-\d.]+)\s*\)?/i);
+        if (!match) return null;
+        const bidLat = parseFloat(match[1]);
+        const bidLong = parseFloat(match[2]);
+        return calculateDistance(homeLat, homeLong, bidLat, bidLong);
+      })() : null
+    }));
+
+    return filteredBids;
   }
 
   findOne(id: number) {
