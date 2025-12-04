@@ -1,0 +1,26 @@
+{
+  "name": "bidly",
+  "version": "1.0.0",
+  "description": "Bidly - Full Stack Application",
+  "scripts": {
+    "install:backend": "cd bidly-backend && npm install",
+    "install:frontend": "cd bidly-frontend && npm install",
+    "install:all": "npm run install:backend && npm run install:frontend",
+    "dev:backend": "cd bidly-backend && npm run start:dev",
+    "dev:frontend": "cd bidly-frontend && npm start",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "build:backend": "cd bidly-backend && npm run build",
+    "build:frontend": "cd bidly-frontend && npm run build",
+    "build": "npm run build:backend && npm run build:frontend",
+    "start:backend": "cd bidly-backend && npm run start:prod",
+    "start:frontend": "cd bidly-frontend && npm start",
+    "start": "npm run start:backend",
+    "prisma:generate": "cd bidly-backend && npm run prisma:generate"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
